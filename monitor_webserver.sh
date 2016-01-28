@@ -8,7 +8,7 @@ do
     	sMess="httpd server successfully restarted"
     	echo $sMess
    else
-    	sMess="httpd server FAILED to restart. try to restart httpd server..."
+    	sMess="Try to restart httpd server..."
     	echo $sMess
     	/home/local/INI/thai.vo/workspace/httpd/src/httpd
     	if [$? ==  130]

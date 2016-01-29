@@ -10,7 +10,8 @@ do
    else
     	sMess="Try to restart httpd server..."
     	echo $sMess
-    	/home/local/INI/thai.vo/workspace/httpd/src/httpd
+    	#/home/local/INI/thai.vo/workspace/httpd/src/httpd
+    	src/httpd
     	if [$? ==  130]
 		then
 			break       	   #Abandon the loop.

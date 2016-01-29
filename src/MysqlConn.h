@@ -18,27 +18,23 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
-
+#include <iostream>
+#include <errno.h>
 #include "common.h"
-using namespace std;
 
+using namespace std;
+static const char* ACTION[] = { "insert", "update", "delete", "get" };
 pthread_mutex_t mutex_connection = PTHREAD_MUTEX_INITIALIZER;
 
 class MYSQLCONN {
 	static MYSQLCONN* MyConnect;
 	MYSQL* connect;
 //	vector<MYSQL*> array_connection;
-	//change
-//	int index_of_current_connection_inuse;
-	//end change
-	MYSQLCONN(MYSQL* conn = 0) :
-			connect(conn) {
+	MYSQLCONN(){
 		initConn();
 	}
 	void initConn() {//enhance : load config file for database connection server
-		connect->host="127.0.0.1";
 		string hostName = (const char*) getenv("MYSQL_SERVER_ADDRESS");
-		printf("2 initConn\n");
 		string userId = (const char*) getenv("MYSQL_USERNAME");
 		string password = (const char*) getenv("MYSQL_PASSWORD");
 		string DB = (const char*) getenv("MYSQL_DATABASE_NAME");
@@ -51,7 +47,6 @@ class MYSQLCONN {
 			MySQLConnectionRet = mysql_real_connect(connect, hostName.c_str(),
 					userId.c_str(), password.c_str(), DB.c_str(), port,
 					NULL, 0);
-			if(connect)printf("connect != NULL\n");
 			if (MySQLConnectionRet == NULL)
 				throw FFError((char*) mysql_error(connect));
 
@@ -66,23 +61,13 @@ class MYSQLCONN {
 	}
 public:
 	static MYSQLCONN* getInstance() {
-		printf("static MYSQLCONN* getInstance()\n");
-
 		if (!MyConnect) {
-				printf("MyConnect = NULL\n");
-				MyConnect = new MYSQLCONN;
-//			}
-//			pthread_mutex_unlock(&mutex_connection);
-			return MyConnect;
-		} else {
-			printf("MyConnect NOT NULL\n");
-			return MyConnect;
+			MyConnect = new MYSQLCONN;
 		}
+		return MyConnect;
 	}
 
 	MYSQL* getConnection() {
-		printf("MYSQL* getConnection()\n");
-		if(connect) printf("connect NOT NULL\n");
 		return connect;
 	}
 
@@ -121,16 +106,22 @@ int SwitchToNewConnectionIfCurrentConnectionDied()
 		/* If the semaphore set does not exist, then it will not be      */
 		/* created, and an error will occur.                             */
 	semid = semget(semkey, 1, 0666);
-	printf("semid : %d\n", semid);
 	if (semid == -1) {
 		printf("main: semget() failed\n");
 		return -1;
 	}
 		/* Attach the shared memory segment to the client process.       */
 	int fd;
-	int integer;
+	unsigned int integer;
 	/* Open the file.  */
-	fd = open("test.txt", O_RDWR, S_IRUSR | S_IWUSR);
+	string current_dir = get_current_dir_name();
+	string full_path_file_name = current_dir+"/src/test.txt";
+	fd = open(full_path_file_name.c_str(), O_RDWR, S_IRUSR | S_IWUSR);
+	if (fd < 0)
+	{
+		printf("failed to open file %s: errno [%d] errmsg [%s]\n", full_path_file_name.c_str(), errno, strerror(errno));
+		return -1;
+	}
 	/* Create the memory-mapping.  */
 	file_memory = mmap(0, FILE_LENGTH, PROT_READ | PROT_WRITE,
 	MAP_SHARED, fd, 0);
@@ -158,6 +149,7 @@ int SwitchToNewConnectionIfCurrentConnectionDied()
 		return -1;
 	}
 	munmap (file_memory, FILE_LENGTH);
+	return 0;
 }
 map<string,string> parseStringWithAssignmentDelimiter(vector<string> s);
 void parseUploadData(string uploadData, DATA& data);
@@ -196,6 +188,6 @@ void parseUploadData(string uploadData, DATA& data) {
 			expressionAssignment);
 	data.op = ret["op"];
 	data.id = ret["id"];
-	data.value = ret["name"];
+	data.value = ret["value"];
 }
 #endif /* MYSQLCONN_H_ */

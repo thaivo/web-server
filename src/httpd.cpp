@@ -90,9 +90,9 @@ void handleDataIntoDb(DATA& data, bool& isKeyExisted) {
 		sprintf(temp,"select value from temp where id = %s",data.id.c_str());
 	}
 	string sqlQuery = (const char*) temp;
+	printf("sqlQuery : %s\n",sqlQuery.c_str());
 	int mysqlStatus = mysql_query(MYSQLCONN::getInstance()->getConnection(),
 			sqlQuery.c_str());
-	printf("mysqlStatus = %d\n", mysqlStatus);
 	if (mysqlStatus) {
 		printf("mysql error: %s\n",
 				(char*) mysql_error(MYSQLCONN::getInstance()->getConnection()));
@@ -108,7 +108,7 @@ void handleDataIntoDb(DATA& data, bool& isKeyExisted) {
 			 MYSQL_ROW  mysqlRow;
 			while ((mysqlRow = mysql_fetch_row(res))) // row pointer in the result set
 			{
-				for (int ii = 0; ii < numFields; ii++) {
+				for (unsigned int ii = 0; ii < numFields; ii++) {
 					data.value = mysqlRow[ii];
 					printf("Row: %s\t", mysqlRow[ii] ? mysqlRow[ii] : "NULL"); // Not NULL then print
 				}
@@ -227,7 +227,6 @@ int answer_to_connection(void *cls, struct MHD_Connection *connection,
 				(connection_info_struct *) *con_cls;
 
 		if (*upload_data_size != 0) {
-			printf("main upload_data\n");
 			DATA data;
 			pthread_mutex_lock(&mutex_db);
 			usleep(500000);

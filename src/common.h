@@ -22,7 +22,7 @@ using namespace std;
 
 static const string AND_DELIMITER = "&";
 static const string ASSIGNMENT_DELIMITER = "=";
-static const char* ACTION[] = { "insert", "update", "delete", "get" };
+
 struct DATA {
 	string op;
 	string id;
@@ -51,11 +51,9 @@ int binary_semaphore_wait(int semid) {
 	/* Use the first (and only) semaphore.  */
 	operations[0].sem_num = 0;
 	/* Decrement by 1.  */
-	printf("wait sem_op1 = %d\n", operations[0].sem_op);
 	operations[0].sem_op = -1;
 	/* Permit undo'ing.  */
 	operations[0].sem_flg = 0;
-	;
 	printf("wait sem_op2 = %d\n", operations[0].sem_op);
 	return semop(semid, operations, 1);
 }

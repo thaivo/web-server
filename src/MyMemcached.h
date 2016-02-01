@@ -14,7 +14,7 @@
 #include <unistd.h>
 #include <libmemcached/memcached.h>
 
-#include "common.h"
+#include "Common.h"
 using namespace std;
 class MyMemcached {
 	memcached_server_st *servers;

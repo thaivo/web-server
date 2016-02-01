@@ -20,11 +20,12 @@
 #include <sys/mman.h>
 #include <iostream>
 #include <errno.h>
-#include "common.h"
+#include "Common.h"
 
 using namespace std;
 static const char* ACTION[] = { "insert", "update", "delete", "get" };
 pthread_mutex_t mutex_connection = PTHREAD_MUTEX_INITIALIZER;
+vector<DB> dbInfoArrays;
 
 class MYSQLCONN {
 	static MYSQLCONN* MyConnect;

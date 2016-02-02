@@ -31,30 +31,67 @@
 #include <string>
 #include <vector>
 #include <mysql/mysql.h>
-#include "common.h"
+#include "Common.h"
 using namespace std;
 
-struct DB{//info db server will be push to config file
-	string hostname;
-	string username;
-	string password;
-	unsigned int port;
-	string dbname;
-};
+//struct DB{//info db server will be push to config file
+//	string hostname;
+//	string username;
+//	string password;
+//	unsigned int port;
+//	string dbname;
+//};
 /*
  * init array of database server info
  */
-void initArrayDBS(vector<DB> &dbs){//enhance: get info db servers from config file
-	for (int i = 0; i < 2; ++i) {
-		DB db;
-		db.hostname = "127.0.0.1";
-		db.username = "root";
-		db.password = "root";
-		db.port = 3306+i;
-		db.dbname = "OC";
-		dbs.push_back(db);
+vector<DB> dbInfoArrays;
+
+/*
+ * read db info from config file
+ */
+void loadDBsConfig() {
+	ifstream file("DBInfo.config");
+	string str;
+	string token;
+	size_t pos = 0;
+	int index = 0;
+	while (std::getline(file, str)) {
+		pos = str.find(ASSIGNMENT_DELIMITER);
+		token = str.substr(0, pos);
+		str.erase(0, pos + ASSIGNMENT_DELIMITER.length());
+		DB temp;
+		for (int i = 0; i < 5; ++i) {
+			pos = str.find(COMMA_DELIMITER);
+			token = str.substr(0, pos);
+			if (i == 0)
+				temp.hostname = token;
+			else if (i == 1)
+				temp.port = (unsigned int) atoi(token.c_str());
+			else if (i == 2)
+				temp.dbname = token;
+			else if (i == 3)
+				temp.username = token;
+			else if (i == 4)
+				temp.password = token;
+			str.erase(0, pos + COMMA_DELIMITER.length());
+		}
+		dbInfoArrays.push_back(temp);
+		++index;
+
 	}
 }
+
+//void initArrayDBS(vector<DB> &dbs) { //enhance: get info db servers from config file
+//	for (int i = 0; i < 2; ++i) {
+//		DB db;
+//		db.hostname = "127.0.0.1";
+//		db.username = "root";
+//		db.password = "root";
+//		db.port = 3306 + i;
+//		db.dbname = "OC";
+//		dbs.push_back(db);
+//	}
+//}
 
 int main(int argc, char *argv[]) {
 	int rc, semid;
@@ -106,8 +143,12 @@ int main(int argc, char *argv[]) {
 	printf("Ready for client jobs\n");
 	int port = 0;
 
-	vector<DB> dbs;
-	initArrayDBS(dbs);
+//	vector<DB> dbs;
+//	initArrayDBS(dbs);
+	loadDBsConfig();
+	for (size_t i = 0; i < dbInfoArrays.size(); ++i) {
+		printf("dbInfoArrays[%d].port = %d\n", i, dbInfoArrays[i].port);
+	}
 	MYSQL *MySQLConnectionRet;
 	MYSQL *connect = mysql_init( NULL);
 	bool createConnection = false;
@@ -116,14 +157,15 @@ int main(int argc, char *argv[]) {
 		//TO DO
 		int current_port = port;
 		printf("wait...\n");
-		if(!createConnection)
-		{
-			for(size_t i = 0; i < dbs.size(); ++i){
+		if (!createConnection) {
+			for (size_t i = 0; i < dbInfoArrays.size(); ++i) {
 				MySQLConnectionRet = mysql_real_connect(connect,
-									dbs[i].hostname.c_str(), dbs[i].username.c_str(),
-									dbs[i].password.c_str(), dbs[i].dbname.c_str(), dbs[i].port,
-									NULL, 0);
-				if (MySQLConnectionRet != NULL){
+						dbInfoArrays[i].hostname.c_str(),
+						dbInfoArrays[i].username.c_str(),
+						dbInfoArrays[i].password.c_str(),
+						dbInfoArrays[i].dbname.c_str(), dbInfoArrays[i].port,
+						NULL, 0);
+				if (MySQLConnectionRet != NULL) {
 					createConnection = true;
 					break;
 				}
@@ -135,16 +177,23 @@ int main(int argc, char *argv[]) {
 			}
 		}
 		int isAlive = mysql_ping(connect);
-		printf("isAlive = %d\n",isAlive);
+		printf("isAlive = %d\n", isAlive);
 		sleep(5);
-		if(isAlive != 0){
-			if (connect->port == dbs[0].port){
-				connect->port = dbs[1].port;
+		if (isAlive != 0) {
+			for (size_t i = 0; i < dbInfoArrays.size(); ++i) {
+				if (connect->port == dbInfoArrays[dbInfoArrays.size()-1].port){
+					printf("dbInfoArrays[%d].port = %d\n", i, dbInfoArrays[dbInfoArrays.size()-1].port);
+					connect->port = dbInfoArrays[0].port;
+					break;
+				}
+				else if (connect->port == dbInfoArrays[i].port) {
+					printf("dbInfoArrays[%d].port = %d\n", i, dbInfoArrays[i].port);
+					connect->port = dbInfoArrays[i+1].port;
+					break;
+				}
 			}
-			else{
-				connect->port = dbs[0].port;
-			}
-			printf("connect-> port = %d\n",connect->port);
+
+			printf("connect-> port = %d\n", connect->port);
 			connect->reconnect = true;
 			continue;
 		}

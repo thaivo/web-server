@@ -1,6 +1,10 @@
-all :
+release :
 	cd src; \
-	make all
+	make release
+
+debug :
+	cd src; \
+	make debug
 
 clean:
 	cd src; \

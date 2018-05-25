@@ -5,8 +5,6 @@ make sure memcached server running
 
 in directory httpd:
 run make command to build binary in httpd/src/
-release mode: make release
-debug mode: make debug
 
 start tool to monitor webserver httpd
 ./monitor_webserver.sh

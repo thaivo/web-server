@@ -66,18 +66,18 @@ void handleMemcached(DATA data, bool isKeyExisted) {
 	const char* key = data.id.c_str();
 
 	if (isKeyExisted) {
-		if (data.op == INSERT || data.op == UPDATE) {//update
+		if (data.op == ACTION[0] || data.op == ACTION[1]) {//update
 			const char* value = data.value.c_str();
 			memcached_replace(memc,key,strlen(key),value,strlen(value),(time_t) 0, (uint32_t)0);
-		} else if (data.op == DELETE) { //remove key-value
+		} else if (data.op == ACTION[2]) { //remove key-value
 			memcached_delete(memc, key, strlen(key), (time_t)0);
 		} else{//get
 			size_t* temp = (size_t*) malloc(sizeof(size_t));
 			*temp = 64;
-			data.value = (const char*)memcached_get(memc,key,strlen(key),temp,0,&rc);
+			data.op = (const char*)memcached_get(memc,key,strlen(key),temp,0,&rc);
 		}
 	} else {
-		if (data.op == INSERT || data.op == UPDATE) {
+		if (data.op == ACTION[0] || data.op == ACTION[1]) {
 			const char* value = data.value.c_str();
 			memcached_set(memc,key,strlen(key),value,strlen(value),(time_t)0,(uint32_t)0);
 		} else

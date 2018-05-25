@@ -24,9 +24,9 @@ using namespace std;
 static const string AND_DELIMITER = "&";
 static const string ASSIGNMENT_DELIMITER = "=";
 static const string COMMA_DELIMITER = ",";
-enum ACTION{INSERT = 0,UPDATE, DELETE, SELECT};
+
 struct DATA {
-	ACTION op;
+	string op;
 	string id;
 	string value;
 };

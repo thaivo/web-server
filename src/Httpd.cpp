@@ -68,20 +68,20 @@ const char *errorpage =	"<html><body>This doesn't seem to be right.</body></html
 
 
 void handleDataIntoDb(DATA& data, bool& isKeyExisted) {
-	char* temp = new char[256];
+	char* temp = (char*) malloc(256 * sizeof(char));
 
-	if (data.op == INSERT) //insert
+	if (data.op == ACTION[0]) //insert
 			{
 		sprintf(temp,
 				"%s into temp (id,value) VALUES ('%s','%s')",
 				"insert", data.id.c_str(), data.value.c_str());
-	} else if (data.op == UPDATE) //update
+	} else if (data.op == ACTION[1]) //update
 			{
 		sprintf(temp,
 				"%s temp set value='%s' where id='%s'",
 				"update", data.value.c_str(), data.id.c_str());
 
-	} else if(data.op == DELETE)//delete
+	} else if(data.op == ACTION[2])//delete
 	{
 		sprintf(temp, "%s from temp where id = '%s'", "delete",
 				data.id.c_str());
@@ -101,7 +101,7 @@ void handleDataIntoDb(DATA& data, bool& isKeyExisted) {
 	}
 	MYSQL_RES* res = mysql_store_result(
 			MYSQLCONN::getInstance()->getConnection());
-	if(data.op == GET){
+	if(data.op == ACTION[3]){
 		if (res){  // there are rows
 			// Returns the number of columns in a result set specified
 			 unsigned int numFields = mysql_num_fields(res);
@@ -122,7 +122,6 @@ void handleDataIntoDb(DATA& data, bool& isKeyExisted) {
 	mysql_free_result(res);
 	res = NULL;
 	delete temp;
-	temp = 0;
 
 }
 
@@ -177,8 +176,7 @@ static void request_completed(void *cls, struct MHD_Connection *connection,
 	if (con_info->connectiontype == POST) {
 		MHD_destroy_post_processor(con_info->postprocessor);
 		if (con_info->answerstring)
-			delete con_info->answerstring;
-			con_info->answerstring = 0;
+			free(con_info->answerstring);
 	}
 
 	free(con_info);
@@ -230,8 +228,8 @@ int answer_to_connection(void *cls, struct MHD_Connection *connection,
 
 		if (*upload_data_size != 0) {
 			DATA data;
-			usleep(500000);
 			pthread_mutex_lock(&mutex_db);
+			usleep(500000);
 			//check connect to current db and switch if it die
 			SwitchToNewConnectionIfCurrentConnectionDied();
 			//end check connect to current db
@@ -240,12 +238,12 @@ int answer_to_connection(void *cls, struct MHD_Connection *connection,
 			bool isKeyExistedInMemcached = isKeyExisted(data.id.c_str());
 			bool isKeyExistedInDb = false;
 			handleMemcached(data,isKeyExistedInMemcached);
-			if(!isKeyExistedInMemcached || data.op != SELECT){
+			if(!isKeyExistedInMemcached || data.op != ACTION[3]){
 				handleDataIntoDb(data, isKeyExistedInDb);
 			}
-			if(!isKeyExistedInMemcached && isKeyExistedInDb && data.op == SELECT)
+			if(!isKeyExistedInMemcached && isKeyExistedInDb && data.op == ACTION[3])
 			{//load key-value from db to memcached if key-value pair does not exist in memcached
-				data.op == INSERT;
+				data.op == ACTION[0];
 				handleMemcached(data,isKeyExistedInMemcached);
 			}
 			//end handle memcached

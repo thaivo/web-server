@@ -23,8 +23,7 @@
 #include "Common.h"
 
 using namespace std;
-//static const char* ACTION[] = { "insert", "update", "delete", "get" };
-
+static const char* ACTION[] = { "insert", "update", "delete", "get" };
 pthread_mutex_t mutex_connection = PTHREAD_MUTEX_INITIALIZER;
 vector<DB> dbInfoArrays;
 
@@ -153,54 +152,42 @@ int SwitchToNewConnectionIfCurrentConnectionDied()
 	munmap (file_memory, FILE_LENGTH);
 	return 0;
 }
-map<string,string> parseStringWithAssignmentDelimiter(vector<string> *s);
+map<string,string> parseStringWithAssignmentDelimiter(vector<string> s);
 void parseUploadData(string uploadData, DATA& data);
 void handleDataIntoDb(DATA& data);
 
-void parseStringWithAndDelimiter(vector<string> *&output, string input) {
+void parseStringWithAndDelimiter(vector<string>& output, string input) {
 	std::string token;
 	size_t pos = 0;
 	while ((pos = input.find(AND_DELIMITER)) != std::string::npos) {
 		token = input.substr(0, pos);
-		output->push_back(token);
+		output.push_back(token);
 		input.erase(0, pos + AND_DELIMITER.length());
 	}
-	output->push_back(input);
+	output.push_back(input);
 }
 
-map<string, string> parseStringWithAssignmentDelimiter(vector<string> *s) {
+map<string, string> parseStringWithAssignmentDelimiter(vector<string> s) {
 	string delimiter = "=";
 	size_t pos = 0;
 	std::string token;
 	map<string, string> ret;
-	for(size_t i= 0; i<s->size(); ++i) {
-		while ((pos = s->operator [](i).find(ASSIGNMENT_DELIMITER)) != std::string::npos) {
-			token = s->operator [](i).substr(0, pos);
-			s->operator [](i).erase(0, pos + delimiter.length());
+	for(size_t i= 0; i<s.size(); ++i) {
+		while ((pos = s[i].find(ASSIGNMENT_DELIMITER)) != std::string::npos) {
+			token = s[i].substr(0, pos);
+			s[i].erase(0, pos + delimiter.length());
 		}
-		ret[token] = s->operator [](i);
+		ret[token] = s[i];
 	}
 	return ret;
 }
 
 void parseUploadData(string uploadData, DATA& data) {
-	vector<string> *expressionAssignment;
+	vector<string> expressionAssignment;
 	parseStringWithAndDelimiter(expressionAssignment, uploadData);
 	map<string, string> ret = parseStringWithAssignmentDelimiter(
 			expressionAssignment);
-
-	if (ret["op"] == "insert") //insert
-	{
-		data.op = INSERT;
-	} else if (ret["op"] == "update") //update
-	{
-		data.op = UPDATE;
-	} else if (ret["op"] == "delete") //delete
-	{
-		data.op = DELETE;
-	} else { //get data
-		data.op = SELECT;
-	}
+	data.op = ret["op"];
 	data.id = ret["id"];
 	data.value = ret["value"];
 }
